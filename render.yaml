@@ -2,8 +2,10 @@ services:
   - type: web
     name: gear-optimizer
     runtime: python
-    buildCommand: ""
-    startCommand: streamlit run app.py --server.port $PORT
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.headless true
+    autoDeploy: true
     envVars:
       - key: PORT
         value: 10000
