@@ -43,7 +43,7 @@ class StatSliderPanel(QWidget):
                 slider.setMinimum(0)
                 slider.setMaximum(1000)
 
-                # Set default values
+                # Set default values (just based on personal preference)
                 if group_name == "mitigation":
                     if stat in ["Slash", "Blunt", "Stab"]:
                         default_val = 3

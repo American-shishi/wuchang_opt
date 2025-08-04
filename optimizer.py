@@ -1,7 +1,7 @@
 import itertools
 
 def calculate_total_mitigation(armor_set):
-    """Apply diminishing returns across all mitigation stats"""
+    """Apply diminishing returns formula across all mitigation stats"""
     stat_keys = armor_set[0].mitigation.keys()
     cumulative = {stat: 1.0 for stat in stat_keys}
 
@@ -12,7 +12,7 @@ def calculate_total_mitigation(armor_set):
     return {stat: 1 - cumulative[stat] for stat in stat_keys}  # Final effective mitigation
 
 def calculate_total_resistance(armor_set, base_stat):
-    """Sum all resistances linearly and apply to baseline stat"""
+    """Sum all resistances linearly and multiply to baseline stat"""
     stat_keys = armor_set[0].resistances.keys()
     total_resist = {stat: 0 for stat in stat_keys}
 
@@ -32,7 +32,8 @@ def score_armor_set(armor_set, weights, base_resistance_stat):
         score += weight * mitigation.get(stat, 0)
 
     for stat, weight in weights.get("resistance", {}).items():
-        # Normalize resistance values (optional scaling)
+        # Normalize resistance values by dividing by base stat
         score += (weight * resistance.get(stat, 0) / base_resistance_stat) * 0.5
+        # I arbitrarily reduced score by half because it still felt too heavy compared to mitigation
 
     return score

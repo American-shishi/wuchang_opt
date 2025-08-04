@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QCheckBox, QHBoxLayout, QLabel, QScrollArea
 from gear_data import headgear, chestgear, armgear, leggear
 
+# Allow users to check and uncheck which gear they have access to currently
 class GearSelector(QWidget):
     def __init__(self):
         super().__init__()
