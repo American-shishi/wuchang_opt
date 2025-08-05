@@ -1,5 +1,6 @@
 import streamlit as st
-from gear_data import headgear, chestgear, armgear, leggear, ArmorPiece
+from gear_data import headgear, chestgear, handgear, leggear
+from armor_piece import ArmorPiece
 from optimizer import score_armor_set, calculate_total_mitigation, calculate_total_resistance
 import itertools
 
@@ -48,16 +49,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
+def get_top_gear(gear_dict, weights, base_stat, top_n=15):
+    scored = []
+    for item in gear_dict:
+        mit_score = sum(item.mitigation.get(stat, 0) * weights["mitigation"].get(stat, 0) for stat in weights["mitigation"])
+        res_score = sum(base_stat * (1 + item.resistances.get(stat, 0) / 100) * weights["resistance"].get(stat, 0) for stat in weights["resistance"])
+        score = mit_score + 0.5 * res_score  # Weight resistance half as much (like your optimizer does)
+        scored.append((score, item))
+    scored.sort(reverse=True)
+    return [item for _, item in scored[:top_n]]
+
+
 st.set_page_config(page_title="Gear Optimizer", layout="centered")
 
 st.title("🛡️ Gear Optimizer")
 
 # Build selector for each slot
-available_gear = {}
 gear_sources = {
     "head": headgear,
     "chest": chestgear,
-    "arms": armgear,
+    "arms": handgear,
     "legs": leggear
 }
 
@@ -66,14 +78,33 @@ base_resistance_stat = 130 if high_madness else 100
 st.sidebar.caption(f"Base Resistance Stat = {base_resistance_stat}")
 
 # Sidebar for gear selection
-st.sidebar.subheader("🎒 Available Gear Selection")
+st.subheader("🎒 Available Gear Selection")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Gear Availability Filters**")
+
+dlc_enabled = st.sidebar.checkbox("Include DLC Armor (Chapter 0)", value=True)
+
+max_chapter = st.sidebar.selectbox("Max Chapter to Include", options=[1, 2, 3, 4, 5], index=4)
 
 available_gear = {}
+
+def gear_filter(item):
+    if item.chapter == 0:
+        return dlc_enabled
+    elif item.chapter <= max_chapter:
+        return True
+    elif item.chapter == 6:
+        return False  # manual-only items
+    else:
+        return False
+
 for slot, gear_dict in gear_sources.items():
     with st.sidebar.expander(f"{slot.capitalize()} Gear", expanded=False):
         selected_items = []
         for name, piece in gear_dict.items():
-            if st.checkbox(f"{name}", value=True, key=f"{slot}_{name}"):
+            default_checked = gear_filter(piece)
+            if st.checkbox(f"{name}", value=default_checked, key=f"{slot}_{name}"):
                 selected_items.append(piece)
         available_gear[slot] = selected_items
 
@@ -103,7 +134,16 @@ with left:
 with right:
     st.subheader("⚙️ Run & Results")
     if st.button("🔍 Optimize Gear"):
-        armor_by_slot = available_gear
+        # Filter top 20 per slot before running optimizer
+        armor_by_slot = {
+            slot: get_top_gear(
+                available_gear[slot],
+                {"mitigation": mitigation_weights, "resistance": resistance_weights},
+                base_resistance_stat,
+                top_n=20
+            )
+            for slot in available_gear
+        }
         best_score = float('-inf')
         best_combo = None
 
