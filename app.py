@@ -50,7 +50,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def get_top_gear(gear_dict, weights, base_stat, top_n=15):
+def get_top_gear(gear_dict, weights, base_stat, top_n=12):
     scored = []
     for item in gear_dict:
         mit_score = sum(item.mitigation.get(stat, 0) * weights["mitigation"].get(stat, 0) for stat in weights["mitigation"])
