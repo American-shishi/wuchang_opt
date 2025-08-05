@@ -3,7 +3,7 @@ from gui_components.gear_selector import GearSelector
 from gui_components.stat_slider import StatSliderPanel
 from gui_components.result_display import ResultDisplay
 from optimizer import score_armor_set, calculate_total_mitigation, calculate_total_resistance
-from gear_data import headgear, chestgear, armgear, leggear, ArmorPiece
+
 import itertools
 import sys
 
