@@ -50,15 +50,34 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def get_top_gear(gear_dict, weights, base_stat, top_n=12):
+def get_top_gear(gear_list, weights, base_stat, top_n_overall=10, top_n_per_stat=3):
+    mitigation_stats = list(weights["mitigation"].keys())
+    resistance_stats = list(weights["resistance"].keys())
+
+    # 1. Top N overall by weighted score
     scored = []
-    for item in gear_dict:
-        mit_score = sum(item.mitigation.get(stat, 0) * weights["mitigation"].get(stat, 0) for stat in weights["mitigation"])
-        res_score = sum(base_stat * (1 + item.resistances.get(stat, 0) / 100) * weights["resistance"].get(stat, 0) for stat in weights["resistance"])
-        score = mit_score + 0.5 * res_score  # Weight resistance half as much (like your optimizer does)
-        scored.append((score, item))
+    for item in gear_list:
+        mit_score = sum(item.mitigation.get(stat, 0) * weights["mitigation"].get(stat, 0) for stat in mitigation_stats)
+        res_score = sum(base_stat * (1 + item.resistances.get(stat, 0) / 100) * weights["resistance"].get(stat, 0) for stat in resistance_stats)
+        total_score = mit_score + 0.5 * res_score
+        scored.append((total_score, item))
     scored.sort(reverse=True)
-    return [item for _, item in scored[:top_n]]
+    top_overall = set(item for _, item in scored[:top_n_overall])
+
+    # 2. Top N for each individual stat
+    top_per_stat = set()
+
+    for stat in mitigation_stats:
+        top_items = sorted(gear_list, key=lambda item: item.mitigation.get(stat, 0), reverse=True)[:top_n_per_stat]
+        top_per_stat.update(top_items)
+
+    for stat in resistance_stats:
+        top_items = sorted(gear_list, key=lambda item: item.resistances.get(stat, 0), reverse=True)[:top_n_per_stat]
+        top_per_stat.update(top_items)
+
+    # 3. Combine all selected items
+    final_items = list(top_overall.union(top_per_stat))
+    return final_items
 
 
 st.set_page_config(page_title="Gear Optimizer", layout="centered")
@@ -140,7 +159,6 @@ with right:
                 available_gear[slot],
                 {"mitigation": mitigation_weights, "resistance": resistance_weights},
                 base_resistance_stat,
-                top_n=20
             )
             for slot in available_gear
         }
