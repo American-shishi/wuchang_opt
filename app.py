@@ -3,16 +3,15 @@ from gear_data import headgear, chestgear, handgear, leggear
 from armor_piece import ArmorPiece
 from optimizer import score_armor_set, calculate_total_mitigation, calculate_total_resistance
 import itertools
+from streamlit_js_eval import streamlit_js_eval
+
+
+screen_width = streamlit_js_eval(js_expressions='window.innerWidth', key="SCR_WIDTH")
+is_mobile = screen_width and screen_width < 768
 
 st.markdown(
     """
     <style>
-        section[data-testid="stSidebar"] {
-            width: 350px !important;  /* wider sidebar */
-        }
-        section[data-testid="stSidebar"] > div {
-            width: 350px !important;
-        }
         /* Override Streamlit's max-width constraint */
         .css-1lcbmhc.e1f1d6gn3, .block-container {
             max-width: 100% !important;
@@ -21,6 +20,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 st.markdown("""
     <style>
         /* Shrink spacing around sliders */
@@ -50,7 +50,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def get_top_gear(gear_list, weights, base_stat, top_n_overall=10, top_n_per_stat=3):
+def get_top_gear(gear_list, weights, base_stat, top_n_overall=10, top_n_per_stat=5):
     mitigation_stats = list(weights["mitigation"].keys())
     resistance_stats = list(weights["resistance"].keys())
 
@@ -84,27 +84,23 @@ st.set_page_config(page_title="Gear Optimizer", layout="centered")
 
 st.title("🛡️ Gear Optimizer")
 
-# Build selector for each slot
-gear_sources = {
-    "head": headgear,
-    "chest": chestgear,
-    "arms": handgear,
-    "legs": leggear
-}
+# ─────────────────────────────
+# TOP CONTROLS (Mobile or Desktop Layout)
+# ─────────────────────────────
 
-high_madness = st.sidebar.checkbox("High Madness?", value=True)  # default checked
+if is_mobile:
+    high_madness = st.checkbox("High Madness?", value=True)
+    dlc_enabled = st.checkbox("Include DLC Armor (Chapter 0)", value=True)
+    max_chapter = st.selectbox("Max Chapter to Include", options=[1, 2, 3, 4, 5], index=4)
+else:
+    with st.container():
+        cols = st.columns([1, 1, 1.5])
+        high_madness = cols[0].checkbox("High Madness?", value=True)
+        dlc_enabled = cols[1].checkbox("Include DLC Armor (Ch. 0)", value=True)
+        max_chapter = cols[2].selectbox("Max Chapter", options=[1, 2, 3, 4, 5], index=4)
+
 base_resistance_stat = 130 if high_madness else 100
-st.sidebar.caption(f"Base Resistance Stat = {base_resistance_stat}")
-
-# Sidebar for gear selection
-st.subheader("🎒 Available Gear Selection")
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Gear Availability Filters**")
-
-dlc_enabled = st.sidebar.checkbox("Include DLC Armor (Chapter 0)", value=True)
-
-max_chapter = st.sidebar.selectbox("Max Chapter to Include", options=[1, 2, 3, 4, 5], index=4)
+st.caption(f"Base Resistance Stat = {base_resistance_stat}")
 
 available_gear = {}
 
@@ -114,21 +110,46 @@ def gear_filter(item):
     elif item.chapter <= max_chapter:
         return True
     elif item.chapter == 6:
-        return False  # manual-only items
-    else:
         return False
+    return False
 
-for slot, gear_dict in gear_sources.items():
-    with st.sidebar.expander(f"{slot.capitalize()} Gear", expanded=False):
+gear_sources = {
+    "head": headgear,
+    "chest": chestgear,
+    "arms": handgear,
+    "legs": leggear
+}
+
+# Layout for gear selection expanders
+st.markdown("### 🎒 Available Gear Selection")
+
+if is_mobile:
+    for slot, gear_dict in gear_sources.items():
         selected_items = []
-        for name, piece in gear_dict.items():
-            default_checked = gear_filter(piece)
-            if st.checkbox(f"{name}", value=default_checked, key=f"{slot}_{name}"):
-                selected_items.append(piece)
+        with st.expander(f"{slot.capitalize()} Gear", expanded=False):
+            for name, piece in gear_dict.items():
+                default_checked = gear_filter(piece)
+                if st.checkbox(name, value=default_checked, key=f"{slot}_{name}"):
+                    selected_items.append(piece)
+        available_gear[slot] = selected_items
+else:
+    gear_cols = st.columns(4)
+    for i, (slot, gear_dict) in enumerate(gear_sources.items()):
+        selected_items = []
+        with gear_cols[i].expander(f"{slot.capitalize()} Gear", expanded=False):
+            for name, piece in gear_dict.items():
+                default_checked = gear_filter(piece)
+                if st.checkbox(name, value=default_checked, key=f"{slot}_{name}"):
+                    selected_items.append(piece)
         available_gear[slot] = selected_items
 
 
-left, right = st.columns([3, 2])  # 60% | 40% split
+
+if is_mobile:
+    left = st.container()
+    right = st.container()
+else:
+    left, right = st.columns([3, 2])
 
 with left:
     st.subheader("🎚️ Stat Weight Sliders")

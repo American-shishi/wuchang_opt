@@ -3,4 +3,6 @@ Small python app for determining best in slot armor for any need
 
 You can try a web hosted version here: https://wuchang-opt.onrender.com/
 It's a free hosting and notably slower, but it works if you can't use the exe release or python scripts.
-(It's currently stuck at version 0.2, which only has chapter 1 gear in it because adding more makes it exponentially slower. I'll try to work on a solution.)
+
+Yes, the web app version DOES have all the armor in the game now. It is v0.5 as well.
+I prefiltered the potential options in the web app version in a way that shouldn't effect results much but keeps the calculation time much lower
