@@ -50,7 +50,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def get_top_gear(gear_list, weights, base_stat, top_n_overall=10, top_n_per_stat=5):
+def get_top_gear(gear_list, weights, base_stat, top_n_overall=8, top_n_per_stat=3):
     mitigation_stats = list(weights["mitigation"].keys())
     resistance_stats = list(weights["resistance"].keys())
 
